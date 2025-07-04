@@ -1,94 +1,129 @@
 document.addEventListener('DOMContentLoaded', function () {
-  // ▼▼▼ ¡MUY IMPORTANTE! PEGA AQUÍ LA URL DE TU WEB APP DE GOOGLE ▼▼▼
-  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwyft49tePPwolLjjNsTkql44DrOOwynaYL7b4Uz_iEzpcJHTwgwG3eGpCkTeTEtXHjFA/exec
+    // ▼▼▼ PEGA AQUÍ TU URL DE GOOGLE APPS SCRIPT ▼▼▼
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxczdNAxo7bxq2G6FxyNLVs3-USySTXaAIRAWcYd33suPLByr-Xde4CH8viUaE17iNsQ/exec
 ';
 
-  const form = document.getElementById('evaluadorForm');
-  const resultadoDiv = document.getElementById('resultado');
+    const form = document.getElementById('evaluatorForm');
+    const alertMessageDiv = document.getElementById('alert-message');
+    const resultsDiv = document.getElementById('results');
 
-  // Inicializa el cliente de la app de Freshworks
-  app.initialized().then(function(_client) {
-    window.client = _client; // Hacemos el cliente accesible
+    const benchmarks = {
+        manufactura: { rotationMin: 6, rotationMax: 12, inventoryRatio: 25, maxLoss: 3, name: "Manufactura" },
+        logistica: { rotationMin: 12, rotationMax: 24, inventoryRatio: 20, maxLoss: 2, name: "Logística" },
+        retail: { rotationMin: 8, rotationMax: 15, inventoryRatio: 15, maxLoss: 4, name: "Retail" },
+        salud: { rotationMin: 4, rotationMax: 8, inventoryRatio: 20, maxLoss: 2, name: "Salud" },
+        mineria: { rotationMin: 3, rotationMax: 6, inventoryRatio: 30, maxLoss: 5, name: "Minería/Oil & Gas" }
+    };
 
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-      resultadoDiv.innerHTML = `<fw-spinner size="large"></fw-spinner>`;
-      
-      // 1. OBTENER DATOS DEL USUARIO LOGUEADO
-      client.data.get('loggedInUser').then(function(userData) {
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
         
-        const distribuidor = userData.loggedInUser.agent.group_names[0] || 'Sin Grupo';
-        const vendedor = userData.loggedInUser.contact.name;
+        try {
+            const industry = document.getElementById('industry').value;
+            if (!industry) {
+                showAlert('Por favor seleccione una industria.', 'alert-danger');
+                return;
+            }
+            
+            const data = calculateAll();
+            displayResults(data.display);
+            
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(data.forSheet),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            })
+            .then(response => response.json().catch(() => ({}))) // Evita error si la respuesta no es JSON
+            .then(res => {
+                console.log('Respuesta de Google Sheets:', res);
+                if(res.status === 'success') {
+                    showAlert('Datos guardados exitosamente.', 'alert-success');
+                } else {
+                    // Si la respuesta no tiene 'status', asumimos que funcionó por la llamada inicial
+                    showAlert('Solicitud de guardado enviada.', 'alert-success');
+                }
+            })
+            .catch(error => {
+                console.error('Error de red al enviar a Google Sheets:', error);
+                showAlert('Error de red al guardar los datos. Revisa la consola (F12).', 'alert-danger');
+            });
 
-        // 2. Recolectar datos del formulario
-        const datosFormulario = {
-          empresa: document.getElementById('empresa').value,
-          contacto: document.getElementById('contacto').value,
-          industria: document.getElementById('industria').value,
-          ingresos: parseFloat(document.getElementById('ingresos').value) || 0,
-          empleados: parseInt(document.getElementById('empleados').value) || 0,
-          crecimiento: parseFloat(document.getElementById('crecimiento').value) || 0,
-          presupuesto: parseFloat(document.getElementById('presupuesto').value) || 0,
-          antiguedad: parseInt(document.getElementById('antiguedad').value) || 0
-        };
-
-        // 3. Calcular potencial
-        const potencial = calcularPotencial(datosFormulario);
-
-        // 4. COMBINAR TODOS LOS DATOS para el envío
-        const datosParaEnviar = {
-          ...datosFormulario,
-          distribuidor: distribuidor,
-          vendedor: vendedor,
-          potencial: potencial
-        };
-        
-        // 5. Enviar todo a Google Sheets
-        client.request.post(GOOGLE_SCRIPT_URL, {
-          body: JSON.stringify(datosParaEnviar)
-        }).then(
-          function(response) {
-            console.log("Respuesta del script:", response);
-            mostrarResultado(potencial, "¡Datos guardados con éxito!");
-          },
-          function(error) {
-            console.error("Error al guardar:", error);
-            mostrarResultado("Error", "No se pudieron guardar los datos. Revisa la consola.");
-          }
-        );
-
-      }).catch(function(error) {
-        console.error('Error obteniendo datos del usuario:', error);
-        mostrarResultado("Error", "No se pudo identificar al vendedor.");
-      });
+        } catch (error) {
+            console.error("Error durante el cálculo:", error);
+            showAlert(`Ocurrió un error: ${error.message}. Revisa que todos los campos estén llenos.`, 'alert-danger');
+        }
     });
-  });
+
+    function calculateAll() {
+        const clientName = document.getElementById('clientName').value;
+        const industry = document.getElementById('industry').value;
+        const evaluator = document.getElementById('evaluator').value;
+        const annualSales = parseFloat(document.getElementById('annualSales').value) || 0;
+        const cogs = parseFloat(document.getElementById('cogs').value) || 0;
+        const inventory = parseFloat(document.getElementById('inventory').value) || 0;
+        const obsolete = parseFloat(document.getElementById('obsolete').value) || 0;
+        const previousSales = parseFloat(document.getElementById('previousSales').value) || 0;
+        const previousInventory = parseFloat(document.getElementById('previousInventory').value) || 0;
+
+        if (annualSales === 0 || inventory === 0) {
+            throw new Error("Ventas anuales e inventarios son obligatorios.");
+        }
+        
+        const rotation = cogs > 0 ? cogs / inventory : 0;
+        const salesGrowth = previousSales > 0 ? ((annualSales - previousSales) / previousSales) * 100 : 0;
+        const inventoryGrowth = previousInventory > 0 ? ((inventory - previousInventory) / previousInventory) * 100 : 0;
+        const inventoryRatio = (inventory / annualSales) * 100;
+        const lossRatio = inventory > 0 ? (obsolete / inventory) * 100 : 0;
+        const benchmark = benchmarks[industry];
+        
+        let scores = { rotation: 0, growth: 0, ratio: 0, loss: 0 };
+        if (rotation < benchmark.rotationMin) scores.rotation = 5; else if (rotation < benchmark.rotationMax) scores.rotation = 3; else scores.rotation = 1;
+        if (inventoryGrowth - salesGrowth > 20) scores.growth = 4; else if (inventoryGrowth - salesGrowth > 10) scores.growth = 2;
+        if (inventoryRatio > benchmark.inventoryRatio) scores.ratio = 4; else if (inventoryRatio > benchmark.inventoryRatio * 0.8) scores.ratio = 2;
+        if (lossRatio > benchmark.maxLoss) scores.loss = 3; else if (lossRatio > benchmark.maxLoss * 0.7) scores.loss = 2;
+        const totalScore = scores.rotation + scores.growth + scores.ratio + scores.loss;
+
+        let finalEvaluation = '';
+        if (totalScore >= 15) finalEvaluation = 'CLIENTE PRIORITARIO';
+        else if (totalScore >= 10) finalEvaluation = 'BUEN POTENCIAL';
+        else if (totalScore >= 5) finalEvaluation = 'POTENCIAL MODERADO';
+        else finalEvaluation = 'EVALUAR OTROS FACTORES';
+
+        return {
+            display: { rotation, salesGrowth, inventoryGrowth, inventoryRatio, lossRatio, totalScore, finalEvaluation, benchmark },
+            forSheet: { evaluator, clientName, industry: benchmark.name, annualSales, cogs, inventory, obsolete, rotation: rotation.toFixed(2), salesGrowth: salesGrowth.toFixed(2), inventoryGrowth: inventoryGrowth.toFixed(2), inventoryRatio: inventoryRatio.toFixed(2), totalScore, finalEvaluation }
+        };
+    }
+
+    function displayResults(data) {
+        const d = data.display;
+        const resultsDiv = document.getElementById('results');
+        const indicatorsDiv = document.getElementById('indicators');
+        const finalScoreDiv = document.getElementById('finalScore');
+        indicatorsDiv.innerHTML = ''; 
+
+        const indicatorsData = [
+            { title: 'Rotación de Inventarios', value: d.rotation.toFixed(1) + 'x', status: d.rotation < d.benchmark.rotationMin ? 'high' : d.rotation < d.benchmark.rotationMax ? 'medium' : 'low' },
+            { title: 'Crecimiento Inventarios vs Ventas', value: (d.inventoryGrowth - d.salesGrowth).toFixed(1) + '%', status: (d.inventoryGrowth - d.salesGrowth) > 20 ? 'high' : (d.inventoryGrowth - d.salesGrowth) > 10 ? 'medium' : 'low' },
+            { title: 'Inventarios/Ventas Ratio', value: d.inventoryRatio.toFixed(1) + '%', status: d.inventoryRatio > d.benchmark.inventoryRatio ? 'high' : d.inventoryRatio > d.benchmark.inventoryRatio * 0.8 ? 'medium' : 'low' },
+            { title: 'Pérdidas por Obsoletos', value: d.lossRatio.toFixed(1) + '%', status: d.lossRatio > d.benchmark.maxLoss ? 'high' : d.lossRatio > d.benchmark.maxLoss * 0.7 ? 'medium' : 'low' }
+        ];
+
+        indicatorsData.forEach(ind => {
+            const statusText = ind.status === 'high' ? 'ALTO POTENCIAL' : ind.status === 'medium' ? 'POTENCIAL MEDIO' : 'BAJO POTENCIAL';
+            indicatorsDiv.innerHTML += `<div class="indicator"><div class="indicator-header"><span class="indicator-title">${ind.title}</span><span class="indicator-value">${ind.value}</span></div><div class="indicator-status status-${ind.status}">${statusText}</div></div>`;
+        });
+
+        finalScoreDiv.innerHTML = `<h3>Puntuación Total: ${d.totalScore}/16</h3><p>${d.finalEvaluation}</p>`;
+        resultsDiv.classList.add('show');
+    }
+    
+    function showAlert(message, type) {
+        alertMessageDiv.textContent = message;
+        alertMessageDiv.className = `alert ${type}`;
+        alertMessageDiv.style.display = 'block';
+        setTimeout(() => {
+            alertMessageDiv.style.display = 'none';
+        }, 5000);
+    }
 });
-
-// --- El resto de las funciones (calcularPotencial, mostrarResultado) permanecen igual ---
-
-function calcularPotencial(datos) {
-  switch (datos.industria) {
-    case 'tecnologia':
-      if (datos.ingresos > 500000 && datos.crecimiento > 15) return 'Alto';
-      else if (datos.ingresos > 100000) return 'Medio';
-      else return 'Bajo';
-    case 'retail':
-      if (datos.presupuesto > 20000 && datos.empleados > 50) return 'Alto';
-      else if (datos.presupuesto > 5000) return 'Medio';
-      else return 'Bajo';
-    default: return 'Bajo';
-  }
-}
-
-function mostrarResultado(potencial, mensajeAdicional = "") {
-  const resultadoDiv = document.getElementById('resultado');
-  let color = 'grey';
-  let mensaje = `Potencial: <strong>${potencial}</strong>. ${mensajeAdicional}`;
-
-  if (potencial === 'Alto') color = 'green';
-  if (potencial === 'Medio') color = 'orange';
-  if (potencial === 'Bajo') color = 'red';
-  
-  resultadoDiv.innerHTML = `<fw-label value="${mensaje}" color="${color}"></fw-label>`;
-}
