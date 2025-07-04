@@ -19,33 +19,37 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault();
         
         try {
+            // 1. Obtener datos y validar
             const industry = document.getElementById('industry').value;
             if (!industry) {
                 showAlert('Por favor seleccione una industria.', 'alert-danger');
                 return;
             }
             
+            // 2. Calcular todo
             const data = calculateAll();
+            
+            // 3. Mostrar resultados en la UI
             displayResults(data.display);
             
+            // 4. Enviar datos a Google Sheets
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify(data.forSheet),
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }
             })
-            .then(response => response.json().catch(() => ({}))) // Evita error si la respuesta no es JSON
+            .then(response => response.json())
             .then(res => {
                 console.log('Respuesta de Google Sheets:', res);
                 if(res.status === 'success') {
                     showAlert('Datos guardados exitosamente.', 'alert-success');
                 } else {
-                    // Si la respuesta no tiene 'status', asumimos que funcionó por la llamada inicial
-                    showAlert('Solicitud de guardado enviada.', 'alert-success');
+                    showAlert('Error al guardar: ' + res.message, 'alert-danger');
                 }
             })
             .catch(error => {
                 console.error('Error de red al enviar a Google Sheets:', error);
-                showAlert('Error de red al guardar los datos. Revisa la consola (F12).', 'alert-danger');
+                showAlert('Error de red al guardar los datos.', 'alert-danger');
             });
 
         } catch (error) {
