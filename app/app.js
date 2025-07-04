@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // ESTA LÍNEA DEBE SER REEMPLAZADA CON TU URL REAL
+    // ▼▼▼ PEGA AQUÍ TU URL DE GOOGLE APPS SCRIPT ▼▼▼
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxczdNAxo7bxq2G6FxyNLVs3-USySTXaAIRAWcYd33suPLByr-Xde4CH8viUaE17iNsQ/exec';
 
     const form = document.getElementById('evaluatorForm');
@@ -24,26 +24,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
             
-            const data = calculateAll();
-            displayResults(data.display);
+            // 2. Calcular todo
+            const calculatedData = calculateAll();
             
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Añadimos un console.log para ver los datos calculados.
+            console.log("Datos calculados:", calculatedData);
+            
+            // 3. Mostrar resultados en la UI, pasando el objeto correcto.
+            displayResults(calculatedData.display);
+            
+            // 4. Enviar datos a Google Sheets
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                body: JSON.stringify(data.forSheet),
+                body: JSON.stringify(calculatedData.forSheet),
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }
             })
+            // --- FIN DE LA CORRECCIÓN ---
             .then(response => response.json().catch(() => ({})))
             .then(res => {
                 console.log('Respuesta de Google Sheets:', res);
-                if(res.status === 'success') {
-                    showAlert('Datos guardados exitosamente.', 'alert-success');
-                } else {
-                    showAlert('Solicitud de guardado enviada.', 'alert-success');
-                }
+                showAlert('Solicitud de guardado enviada.', 'alert-success');
             })
             .catch(error => {
                 console.error('Error de red al enviar a Google Sheets:', error);
-                showAlert('Error de red al guardar los datos. Revisa la consola (F12).', 'alert-danger');
+                showAlert('Error de red al guardar los datos.', 'alert-danger');
             });
 
         } catch (error) {
@@ -63,15 +68,15 @@ document.addEventListener('DOMContentLoaded', function () {
         const previousSales = parseFloat(document.getElementById('previousSales').value) || 0;
         const previousInventory = parseFloat(document.getElementById('previousInventory').value) || 0;
 
-        if (annualSales === 0 || inventory === 0) {
-            throw new Error("Ventas anuales e inventarios son obligatorios.");
+        if (annualSales === 0 || cogs === 0 || inventory === 0) {
+            throw new Error("Ventas, Costo de Ventas e Inventarios son obligatorios para el cálculo.");
         }
         
-        const rotation = cogs > 0 ? cogs / inventory : 0;
+        const rotation = cogs / inventory;
         const salesGrowth = previousSales > 0 ? ((annualSales - previousSales) / previousSales) * 100 : 0;
         const inventoryGrowth = previousInventory > 0 ? ((inventory - previousInventory) / previousInventory) * 100 : 0;
         const inventoryRatio = (inventory / annualSales) * 100;
-        const lossRatio = inventory > 0 ? (obsolete / inventory) * 100 : 0;
+        const lossRatio = (obsolete / inventory) * 100;
         const benchmark = benchmarks[industry];
         
         let scores = { rotation: 0, growth: 0, ratio: 0, loss: 0 };
@@ -93,18 +98,17 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    function displayResults(data) {
-        const d = data.display;
+    function displayResults(displayData) { // El parámetro ahora se llama displayData para mayor claridad
         const resultsDiv = document.getElementById('results');
         const indicatorsDiv = document.getElementById('indicators');
         const finalScoreDiv = document.getElementById('finalScore');
         indicatorsDiv.innerHTML = ''; 
 
         const indicatorsData = [
-            { title: 'Rotación de Inventarios', value: d.rotation.toFixed(1) + 'x', status: d.rotation < d.benchmark.rotationMin ? 'high' : d.rotation < d.benchmark.rotationMax ? 'medium' : 'low' },
-            { title: 'Crecimiento Inventarios vs Ventas', value: (d.inventoryGrowth - d.salesGrowth).toFixed(1) + '%', status: (d.inventoryGrowth - d.salesGrowth) > 20 ? 'high' : (d.inventoryGrowth - d.salesGrowth) > 10 ? 'medium' : 'low' },
-            { title: 'Inventarios/Ventas Ratio', value: d.inventoryRatio.toFixed(1) + '%', status: d.inventoryRatio > d.benchmark.inventoryRatio ? 'high' : d.inventoryRatio > d.benchmark.inventoryRatio * 0.8 ? 'medium' : 'low' },
-            { title: 'Pérdidas por Obsoletos', value: d.lossRatio.toFixed(1) + '%', status: d.lossRatio > d.benchmark.maxLoss ? 'high' : d.lossRatio > d.benchmark.maxLoss * 0.7 ? 'medium' : 'low' }
+            { title: 'Rotación de Inventarios', value: displayData.rotation.toFixed(1) + 'x', status: displayData.rotation < displayData.benchmark.rotationMin ? 'high' : displayData.rotation < displayData.benchmark.rotationMax ? 'medium' : 'low' },
+            { title: 'Crecimiento Inventarios vs Ventas', value: (displayData.inventoryGrowth - displayData.salesGrowth).toFixed(1) + '%', status: (displayData.inventoryGrowth - displayData.salesGrowth) > 20 ? 'high' : (displayData.inventoryGrowth - displayData.salesGrowth) > 10 ? 'medium' : 'low' },
+            { title: 'Inventarios/Ventas Ratio', value: displayData.inventoryRatio.toFixed(1) + '%', status: displayData.inventoryRatio > displayData.benchmark.inventoryRatio ? 'high' : displayData.inventoryRatio > displayData.benchmark.inventoryRatio * 0.8 ? 'medium' : 'low' },
+            { title: 'Pérdidas por Obsoletos', value: displayData.lossRatio.toFixed(1) + '%', status: displayData.lossRatio > displayData.benchmark.maxLoss ? 'high' : displayData.lossRatio > displayData.benchmark.maxLoss * 0.7 ? 'medium' : 'low' }
         ];
 
         indicatorsData.forEach(ind => {
@@ -112,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
             indicatorsDiv.innerHTML += `<div class="indicator"><div class="indicator-header"><span class="indicator-title">${ind.title}</span><span class="indicator-value">${ind.value}</span></div><div class="indicator-status status-${ind.status}">${statusText}</div></div>`;
         });
 
-        finalScoreDiv.innerHTML = `<h3>Puntuación Total: ${d.totalScore}/16</h3><p>${d.finalEvaluation}</p>`;
+        finalScoreDiv.innerHTML = `<h3>Puntuación Total: ${displayData.totalScore}/16</h3><p>${displayData.finalEvaluation}</p>`;
         resultsDiv.classList.add('show');
     }
     
