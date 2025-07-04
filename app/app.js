@@ -6,6 +6,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const alertMessageDiv = document.getElementById('alert-message');
     const resultsDiv = document.getElementById('results');
 
+// --- NUEVA FUNCIÓN PARA FORMATEAR MONEDA ---
+    // Formatea números a un estilo de moneda USD sin decimales.
+    function formatCurrency(number) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(number);
+    }
+    
     const benchmarks = {
         manufactura: { rotationMin: 6, rotationMax: 12, inventoryRatio: 25, maxLoss: 3, name: "Manufactura" },
         logistica: { rotationMin: 12, rotationMax: 24, inventoryRatio: 20, maxLoss: 2, name: "Logística" },
