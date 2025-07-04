@@ -1,0 +1,19 @@
+{
+  "platform-version": "2.0",
+  "product": {
+    "freshdesk": {
+      "location": {
+        "full_page_app": {
+          "url": "index.html",
+          "icon": "icon.svg"
+        }
+      }
+    }
+  },
+  "engines": {
+    "node": "18"
+  },
+  "whitelisted-domains": [
+    "https://script.google.com"
+  ]
+}
