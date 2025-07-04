@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/@freshworks/crayons@3/css/crayons.css">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <div class="fw-flex fw-flex-column fw-p-20">
+    <h4>Evaluador de Oportunidad</h4>
+    <form id="evaluadorForm">
+      <fw-input label="Nombre de la Empresa" id="empresa" required></fw-input>
+      <fw-input label="Contacto Principal" id="contacto" required></fw-input>
+      <fw-select label="Industria" id="industria" required>
+        <fw-select-option value="tecnologia">Tecnología</fw-select-option>
+        <fw-select-option value="retail">Retail</fw-select-option>
+        <fw-select-option value="salud">Salud</fw-select-option>
+        <fw-select-option value="financiero">Financiero</fw-select-option>
+        <fw-select-option value="otro">Otro</fw-select-option>
+      </fw-select>
+      <hr>
+      <fw-input type="number" label="Ingresos Anuales (USD)" id="ingresos" required></fw-input>
+      <fw-input type="number" label="Número de Empleados" id="empleados" required></fw-input>
+      <fw-input type="number" label="Tasa de Crecimiento Anual (%)" id="crecimiento" required></fw-input>
+      <fw-input type="number" label="Presupuesto para Soluciones (USD)" id="presupuesto" required></fw-input>
+      <fw-input type="number" label="Antigüedad de la Empresa (años)" id="antiguedad" required></fw-input>
+      <fw-button color="primary" class="fw-mt-16" type="submit">Evaluar y Guardar</fw-button>
+    </form>
+    <div id="resultado" class="fw-mt-20"></div>
+  </div>
+  <script src="https://unpkg.com/@freshworks/crayons@3/dist/crayons.js"></script>
+  <script src="https://static.freshdev.io/fdk/2.0/assets/fresh_client.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
