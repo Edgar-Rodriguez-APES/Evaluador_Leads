@@ -5,83 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evaluador WMS/CMMS</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f2f2f7; line-height: 1.6; }
-        .container { max-width: 600px; margin: 40px auto; padding: 30px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h4 { font-size: 24px; color: #333; margin-top: 0; }
-        label { display: block; font-weight: bold; margin-top: 20px; margin-bottom: 5px; color: #555; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 30px; }
-        button:disabled { background-color: #9acbff; cursor: not-allowed; }
-        hr { border: none; border-top: 1px solid #eee; margin: 30px 0; }
-        #resultado { margin-top: 20px; font-size: 18px; text-align: center; padding: 15px; border-radius: 4px; display: none; }
-        .resultado-alto { background-color: #d4edda; color: #155724; }
-        .resultado-medio { background-color: #fff3cd; color: #856404; }
-        .resultado-bajo { background-color: #f8d7da; color: #721c24; }
-        /* --- ESTILOS NUEVOS PARA EL FOOTER --- */
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            font-size: 12px;
-            color: #888;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 10px; color: #333; }
+        .container { max-width: 480px; margin: 20px auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; text-align: center; }
+        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header p { font-size: 14px; opacity: 0.9; }
+        .form-section { padding: 20px; }
+        .section-title { font-size: 18px; font-weight: bold; color: #4facfe; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #555; }
+        .input-group input, .input-group select { width: 100%; padding: 12px; border: 2px solid #e1e5e9; border-radius: 10px; font-size: 16px; transition: all 0.3s ease; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: #4facfe; box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1); }
+        .calculate-btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin: 20px 0; }
+        .calculate-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3); }
+        .results { display: none; padding: 20px; background: #f8f9fa; border-top: 1px solid #e1e5e9; }
+        .results.show { display: block; }
+        .indicator { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .indicator-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .indicator-title { font-weight: bold; color: #333; }
+        .indicator-value { font-size: 18px; font-weight: bold; }
+        .indicator-status { font-size: 12px; padding: 4px 8px; border-radius: 20px; font-weight: bold; }
+        .status-high { background: #ffebee; color: #d32f2f; }
+        .status-medium { background: #fff3e0; color: #f57c00; }
+        .status-low { background: #e8f5e8; color: #388e3c; }
+        .final-score { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; margin: 20px 0; }
+        .final-score h3 { font-size: 24px; margin-bottom: 10px; }
+        .final-score p { font-size: 16px; opacity: 0.9; }
+        .alert { padding: 15px; border-radius: 10px; margin: 15px 0; border-left: 4px solid; display: none; }
+        .alert-danger { background: #f8d7da; color: #721c24; border-color: #dc3545; }
+        .alert-success { background: #d4edda; color: #155724; border-color: #28a745; }
+        .footer { text-align: center; margin-top: 15px; padding: 20px; font-size: 12px; color: #888; border-top: 1px solid #eee;}
     </style>
 </head>
 <body>
-  <div class="container">
-    <h4>Evaluador de Oportunidad</h4>
-    
-    <form id="evaluatorForm">
-      <label for="distribuidor">Nombre del Distribuidor</label>
-      <input type="text" id="distribuidor" required>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Technoapes de Colombia S.A.S.</h1>
+            <h1>🎯 Evaluador WMS/CMMS</h1>
+            <p>Análisis de Potencial de Clientes</p>
+        </div>
 
-      <label for="vendedor">Nombre del Vendedor</label>
-      <input type="text" id="vendedor" required>
-      <hr>
-      
-      <label for="empresa">Nombre de la Empresa</label>
-      <input type="text" id="empresa" required>
+        <form id="evaluatorForm" class="form-section">
+            <div class="section-title"><span>📋</span> Información del Cliente</div>
+            <div class="input-group">
+                <label for="clientName">Nombre del Cliente:</label>
+                <input type="text" id="clientName" placeholder="Ingrese el nombre del cliente" required>
+            </div>
+            <div class="input-group">
+                <label for="industry">Industria:</label>
+                <select id="industry" required>
+                    <option value="">Seleccione una industria</option>
+                    <option value="manufactura">Manufactura (Alimentos, Bebidas, Farmacéutica)</option>
+                    <option value="logistica">Logística</option>
+                    <option value="retail">Retail</option>
+                    <option value="salud">Salud</option>
+                    <option value="mineria">Minería/Oil & Gas</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="evaluator">Evaluado por:</label>
+                <input type="text" id="evaluator" placeholder="Su nombre" required>
+            </div>
+            
+            <div class="section-title"><span>💰</span> Datos Financieros (Último Año)</div>
+            <div class="input-group">
+                <label for="annualSales">Ventas Anuales ($):</label>
+                <input type="number" id="annualSales" placeholder="0" min="0" required>
+            </div>
+            <div class="input-group">
+                <label for="cogs">Costo de Ventas ($):</label>
+                <input type="number" id="cogs" placeholder="0" min="0" required>
+            </div>
+            <div class="input-group">
+                <label for="inventory">Inventarios Actuales ($):</label>
+                <input type="number" id="inventory" placeholder="0" min="0" required>
+            </div>
+            <div class="input-group">
+                <label for="obsolete">Pérdidas por Obsoletos ($):</label>
+                <input type="number" id="obsolete" placeholder="0" min="0" required>
+            </div>
+            <div class="input-group">
+                <label for="previousSales">Año Anterior - Ventas ($):</label>
+                <input type="number" id="previousSales" placeholder="0" min="0" required>
+            </div>
+            <div class="input-group">
+                <label for="previousInventory">Año Anterior - Inventarios ($):</label>
+                <input type="number" id="previousInventory" placeholder="0" min="0" required>
+            </div>
 
-      <label for="contacto">Contacto Principal</label>
-      <input type="text" id="contacto" required>
+            <button type="submit" class="calculate-btn">🔍 Evaluar Potencial</button>
+        </form>
+        
+        <div id="alert-message" class="alert"></div>
 
-      <label for="industria">Industria</label>
-      <select id="industria" required>
-        <option value="">Seleccione una industria</option>
-        <option value="tecnologia">Tecnología</option>
-        <option value="retail">Retail</option>
-        <option value="salud">Salud</option>
-        <option value="financiero">Financiero</option>
-        <option value="otro">Otro</option>
-      </select>
-      <hr>
+        <div class="results" id="results">
+            <div class="section-title"><span>📊</span> Resultados del Análisis</div>
+            <div id="indicators"></div>
+            <div class="final-score" id="finalScore"></div>
+        </div>
 
-      <label for="ingresos">Ingresos Anuales (USD)</label>
-      <input type="number" id="ingresos" required>
+        <div class="footer">
+            <p>Este formulario es propiedad intelectual de TECHNOAPES DE COLOMBIA S.A.S. Su uso está restringido exclusivamente a la evaluación de oportunidades en el marco de la relación comercial con nuestros distribuidores y vendedores. Queda prohibida su reproducción, distribución o uso para otros fines sin autorización previa y por escrito.</p>
+        </div>
+        </div>
 
-      <label for="empleados">Número de Empleados</label>
-      <input type="number" id="empleados" required>
-
-      <label for="crecimiento">Tasa de Crecimiento Anual (%)</label>
-      <input type="number" id="crecimiento" required>
-
-      <label for="presupuesto">Presupuesto para Soluciones (USD)</label>
-      <input type="number" id="presupuesto" required>
-      
-      <label for="antiguedad">Antigüedad de la Empresa (años)</label>
-      <input type="number" id="antiguedad" required>
-      
-      <button type="submit" id="submitButton">Evaluar y Guardar</button>
-    </form>
-    
-    <div id="resultado"></div>
-
-    <div class="footer">
-        <p>Este formulario es propiedad intelectual de TECHNOAPES DE COLOMBIA S.A.S. Su uso está restringido exclusivamente a la evaluación de oportunidades en el marco de nuestra relación comercial. Queda prohibida su reproducción, distribución o uso para otros fines sin autorización previa y por escrito.</p>
-    </div>
-    </div>
-  
-  <script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
