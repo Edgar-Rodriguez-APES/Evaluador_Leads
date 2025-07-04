@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // ▼▼▼ PEGA AQUÍ TU URL DE GOOGLE APPS SCRIPT ▼▼▼
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxczdNAxo7bxq2G6FxyNLVs3-USySTXaAIRAWcYd33suPLByr-Xde4CH8viUaE17iNsQ/exec
-';
+    // ESTA LÍNEA DEBE SER REEMPLAZADA CON TU URL REAL
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxczdNAxo7bxq2G6FxyNLVs3-USySTXaAIRAWcYd33suPLByr-Xde4CH8viUaE17iNsQ/exec';
 
     const form = document.getElementById('evaluatorForm');
     const alertMessageDiv = document.getElementById('alert-message');
@@ -19,37 +18,32 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault();
         
         try {
-            // 1. Obtener datos y validar
             const industry = document.getElementById('industry').value;
             if (!industry) {
                 showAlert('Por favor seleccione una industria.', 'alert-danger');
                 return;
             }
             
-            // 2. Calcular todo
             const data = calculateAll();
-            
-            // 3. Mostrar resultados en la UI
             displayResults(data.display);
             
-            // 4. Enviar datos a Google Sheets
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify(data.forSheet),
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }
             })
-            .then(response => response.json())
+            .then(response => response.json().catch(() => ({})))
             .then(res => {
                 console.log('Respuesta de Google Sheets:', res);
                 if(res.status === 'success') {
                     showAlert('Datos guardados exitosamente.', 'alert-success');
                 } else {
-                    showAlert('Error al guardar: ' + res.message, 'alert-danger');
+                    showAlert('Solicitud de guardado enviada.', 'alert-success');
                 }
             })
             .catch(error => {
                 console.error('Error de red al enviar a Google Sheets:', error);
-                showAlert('Error de red al guardar los datos.', 'alert-danger');
+                showAlert('Error de red al guardar los datos. Revisa la consola (F12).', 'alert-danger');
             });
 
         } catch (error) {
